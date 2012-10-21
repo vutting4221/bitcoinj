@@ -510,8 +510,10 @@ public abstract class AbstractBlockChain {
     /**
      * Called as part of connecting a block when the new block results in a different chain having higher total work.
      * 
-     * if (shouldVerifyTransactions)
+     * if (shouldVerifyTransactions())
      *     Either newChainHead needs to be in the block store as a FullStoredBlock, or (block != null && block.transactions != null)
+     * 
+     * if newChainHead is already in the block store, storedPrev should be null.
      */
     private void handleNewBestChain(StoredBlock storedPrev, StoredBlock newChainHead, Block block, boolean expensiveChecks)
             throws BlockStoreException, VerificationException, PrunedException {
@@ -557,7 +559,8 @@ public abstract class AbstractBlockChain {
             }
         } else {
             // (Finally) write block to block store
-            storedNewHead = addToBlockStore(storedPrev, newChainHead.getHeader());
+            if (storedPrev != null)
+                storedNewHead = addToBlockStore(storedPrev, newChainHead.getHeader());
         }
         // Now inform the listeners. This is necessary so the set of currently active transactions (that we can spend)
         // can be updated to take into account the re-organize. We might also have received new coins we didn't have
@@ -805,6 +808,26 @@ public abstract class AbstractBlockChain {
             }
         }
         return false;
+    }
+    
+    /**
+     * Force this chain to reorg back to a specific block.
+     * May be used in reverse headers-sync if a block was found to be invalid that is in this chain.
+     * @param hash The hash of the block to reorg back to (must be in the chain)
+     * @throws VerificationException if a block failed to verify during the reorg
+     * @throws PrunedException if a block needed to reorg has been pruned from the block store
+     * @throws NullPointerException if no reorg path was found or the given hash was not already in the block store
+     */
+    public void forceReorgToHash(Sha256Hash hash) throws VerificationException, PrunedException, NullPointerException {
+        try {
+            StoredBlock blockTarget = getStoredBlockInCurrentScope(hash);
+            if (blockTarget == null)
+                throw new NullPointerException();
+            
+            handleNewBestChain(null, blockTarget, null, shouldVerifyTransactions());
+        } catch (BlockStoreException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     /**
