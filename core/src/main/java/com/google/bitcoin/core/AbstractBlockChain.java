@@ -878,4 +878,9 @@ public abstract class AbstractBlockChain {
             return new Date(estimated);
         }
     }
+    
+    /** Gets the number of orphan blocks in the orphan blocks list. */
+    public synchronized int getOrphanCount() {
+        return orphanBlocks.size();
+    }
 }
