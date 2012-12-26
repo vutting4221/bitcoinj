@@ -328,6 +328,10 @@ public abstract class AbstractBlockChain {
             log.error(block.getHashAsString());
             throw e;
         }
+        
+        // Check if we already have the block connected somewhere
+        if (getStoredBlockInCurrentScope(block.getHash()) != null)
+            return true;
 
         // Try linking it to a place in the currently known blocks.
         StoredBlock storedPrev = getStoredBlockInCurrentScope(block.getPrevBlockHash());
