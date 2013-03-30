@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.io.Serializable;
+import java.lang.ref.WeakReference;
 import java.util.Map;
 
 import static com.google.common.base.Preconditions.checkElementIndex;
@@ -48,7 +49,12 @@ public class TransactionInput extends ChildMessage implements Serializable {
     // The "script bytes" might not actually be a script. In coinbase transactions where new coins are minted there
     // is no input transaction, so instead the scriptBytes contains some extra stuff (like a rollover nonce) that we
     // don't care about much. The bytes are turned into a Script object (cached below) on demand via a getter.
+    
+    // Script bytes are either copied into a byte[] or simply pointed to in the Message bytes object.
     private byte[] scriptBytes;
+    private WeakReference<byte[]> scriptBytesCache;
+    private int scriptBytesOffset;
+    private int scriptBytesLength;
     // The Script object obtained from parsing scriptBytes. Only filled in on demand and if the transaction is not
     // coinbase.
     transient private Script scriptSig;
@@ -127,20 +133,32 @@ public class TransactionInput extends ChildMessage implements Serializable {
         length = cursor - offset + scriptLen + 4;
         cursor = curs;
     }
+    
+    @Override
+    protected void unCache() {
+        scriptBytes = getScriptBytes();
+        super.unCache();
+    }
 
     void parse() throws ProtocolException {
         outpoint = new TransactionOutPoint(params, bytes, cursor, this, parseLazy, parseRetain);
         cursor += outpoint.getMessageSize();
         int scriptLen = (int) readVarInt();
-        scriptBytes = readBytes(scriptLen);
+        if (parseRetain) {
+            scriptBytesOffset = cursor;
+            scriptBytesLength = scriptLen;
+            cursor += scriptLen;
+        } else
+            scriptBytes = readBytes(scriptLen);
         sequence = readUint32();
     }
 
     @Override
     protected void bitcoinSerializeToStream(OutputStream stream) throws IOException {
         outpoint.bitcoinSerialize(stream);
-        stream.write(new VarInt(scriptBytes.length).encode());
-        stream.write(scriptBytes);
+        byte[] scriptBytesCache = getScriptBytes();
+        stream.write(new VarInt(scriptBytesCache.length).encode());
+        stream.write(scriptBytesCache);
         Utils.uint32ToByteStreamLE(sequence, stream);
     }
 
@@ -162,7 +180,8 @@ public class TransactionInput extends ChildMessage implements Serializable {
         // parameter is overloaded to be something totally different.
         if (scriptSig == null) {
             maybeParse();
-            scriptSig = new Script(Preconditions.checkNotNull(scriptBytes));
+            byte[] scriptBytesCache = getScriptBytes();
+            scriptSig = new Script(Preconditions.checkNotNull(scriptBytesCache));
         }
         return scriptSig;
     }
@@ -229,7 +248,18 @@ public class TransactionInput extends ChildMessage implements Serializable {
      */
     public byte[] getScriptBytes() {
         maybeParse();
-        return scriptBytes;
+        if (scriptBytes != null)
+            return scriptBytes;
+        
+        // We don't just cache this in scriptBytes because this is a source of heavy memory usage
+        byte[] scriptBytesTemp = scriptBytesCache == null ? null : scriptBytesCache.get();
+        if (scriptBytesTemp == null) {
+            Preconditions.checkState(scriptBytesLength > -1);
+            scriptBytesTemp = new byte[scriptBytesLength];
+            System.arraycopy(bytes, scriptBytesOffset, scriptBytesTemp, 0, scriptBytesLength);
+            scriptBytesCache = new WeakReference<byte[]>(scriptBytesTemp);
+        }
+        return scriptBytesTemp;
     }
 
     /**
@@ -366,6 +396,7 @@ public class TransactionInput extends ChildMessage implements Serializable {
      */
     private void writeObject(ObjectOutputStream out) throws IOException {
         maybeParse();
+        scriptBytes = getScriptBytes();
         out.defaultWriteObject();
     }
 
