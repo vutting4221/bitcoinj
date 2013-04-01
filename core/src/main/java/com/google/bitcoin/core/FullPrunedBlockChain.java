@@ -98,26 +98,36 @@ public class FullPrunedBlockChain extends AbstractBlockChain {
     //TODO: Remove lots of duplicated code in the two connectTransactions
     
     // TODO: execute in order of largest transaction (by input count) first
-    ExecutorService scriptVerificationExecutor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+    ExecutorService scriptVerificationExecutor = new ThreadPoolExecutor(Runtime.getRuntime().availableProcessors(), Runtime.getRuntime().availableProcessors(),
+            0L, TimeUnit.MILLISECONDS, new PriorityBlockingQueue<Runnable>());
     
-    class Verifyer implements Callable<VerificationException> {
-        final Transaction tx;
-        final List<Script> prevOutScripts;
-        final boolean enforcePayToScriptHash;
-        Verifyer(final Transaction tx, final List<Script> prevOutScripts, final boolean enforcePayToScriptHash) {
-            this.tx = tx; this.prevOutScripts = prevOutScripts; this.enforcePayToScriptHash = enforcePayToScriptHash;
-        }
-        @Override
-        public VerificationException call() throws Exception {
-            try{
-                ListIterator<Script> prevOutIt = prevOutScripts.listIterator();
-                for (int index = 0; index < tx.getInputs().size(); index++) {
-                    tx.getInputs().get(index).getScriptSig().correctlySpends(tx, index, prevOutIt.next(), enforcePayToScriptHash);
+    class Verifyer extends FutureTask<VerificationException> implements Comparable {
+        Transaction tx;
+        public Verifyer(final Transaction tx, final List<Script> prevOutScripts, final boolean enforcePayToScriptHash) {
+            super(new Callable<VerificationException>() {
+                @Override
+                public VerificationException call() throws Exception {
+                    try{
+                        ListIterator<Script> prevOutIt = prevOutScripts.listIterator();
+                        for (int index = 0; index < tx.getInputs().size(); index++) {
+                            tx.getInputs().get(index).getScriptSig().correctlySpends(tx, index, prevOutIt.next(), enforcePayToScriptHash);
+                        }
+                    } catch (VerificationException e) {
+                        return e;
+                    }
+                    return null;
                 }
-            } catch (VerificationException e) {
-                return e;
-            }
-            return null;
+            });
+            this.tx = tx;
+        }
+
+        // PriorityBlockingQueue's head is the least element in the queue,
+        // so we want the Verifyer with the highest inputs to be the "least"
+        @Override
+        public int compareTo(Object o) {
+            if (o instanceof Verifyer)
+                return ((Verifyer)o).tx.getInputs().size() - tx.getInputs().size();
+            return 0;
         }
     }
     
@@ -138,7 +148,8 @@ public class FullPrunedBlockChain extends AbstractBlockChain {
         final boolean enforcePayToScriptHash = block.getTimeSeconds() >= NetworkParameters.BIP16_ENFORCE_TIME;
         
         if (scriptVerificationExecutor.isShutdown())
-            scriptVerificationExecutor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+            scriptVerificationExecutor = new ThreadPoolExecutor(Runtime.getRuntime().availableProcessors(), Runtime.getRuntime().availableProcessors(),
+                    0L, TimeUnit.MILLISECONDS, new PriorityBlockingQueue<Runnable>());
         
         List<Future<VerificationException>> listScriptVerificationResults = new ArrayList<Future<VerificationException>>(block.transactions.size());
         try {
@@ -217,7 +228,7 @@ public class FullPrunedBlockChain extends AbstractBlockChain {
                 
                 if (!isCoinBase) {
                     // Because correctlySpends modifies transactions, this must come after we are done with tx
-                    FutureTask<VerificationException> future = new FutureTask<VerificationException>(new Verifyer(tx, prevOutScripts, enforcePayToScriptHash));
+                    FutureTask<VerificationException> future = new Verifyer(tx, prevOutScripts, enforcePayToScriptHash);
                     scriptVerificationExecutor.execute(future);
                     listScriptVerificationResults.add(future);
                 }
@@ -285,7 +296,8 @@ public class FullPrunedBlockChain extends AbstractBlockChain {
                 BigInteger coinbaseValue = null;
                 
                 if (scriptVerificationExecutor.isShutdown())
-                    scriptVerificationExecutor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+                    scriptVerificationExecutor = new ThreadPoolExecutor(Runtime.getRuntime().availableProcessors(), Runtime.getRuntime().availableProcessors(),
+                            0L, TimeUnit.MILLISECONDS, new PriorityBlockingQueue<Runnable>());
                 List<Future<VerificationException>> listScriptVerificationResults = new ArrayList<Future<VerificationException>>(transactions.size());
                 for(final Transaction tx : transactions) {
                     boolean isCoinBase = tx.isCoinBase();
@@ -339,7 +351,7 @@ public class FullPrunedBlockChain extends AbstractBlockChain {
                     
                     if (!isCoinBase) {
                         // Because correctlySpends modifies transactions, this must come after we are done with tx
-                        FutureTask<VerificationException> future = new FutureTask<VerificationException>(new Verifyer(tx, prevOutScripts, enforcePayToScriptHash));
+                        FutureTask<VerificationException> future = new Verifyer(tx, prevOutScripts, enforcePayToScriptHash);
                         scriptVerificationExecutor.execute(future);
                         listScriptVerificationResults.add(future);
                     }
