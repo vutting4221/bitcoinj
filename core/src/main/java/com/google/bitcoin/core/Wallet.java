@@ -1763,7 +1763,7 @@ public class Wallet implements Serializable, BlockChainListener, PeerFilterProvi
      * @throws IOException if there was a problem broadcasting the transaction
      */
     @Nullable
-    public Transaction sendCoins(Peer peer, SendRequest request) throws IOException {
+    public Transaction sendCoins(Peer peer, SendRequest request) {
         Transaction tx = sendCoinsOffline(request);
         if (tx == null)
             return null;  // Not enough money.
