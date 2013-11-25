@@ -16,18 +16,20 @@
 
 package com.google.bitcoin.networkabstraction;
 
+import com.google.bitcoin.core.Message;
+import com.google.bitcoin.utils.Threading;
+import org.slf4j.LoggerFactory;
+
+import javax.annotation.concurrent.GuardedBy;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.Set;
 import java.util.concurrent.locks.ReentrantLock;
-
-import javax.annotation.concurrent.GuardedBy;
-
-import com.google.bitcoin.core.Message;
-import com.google.bitcoin.utils.Threading;
-import org.slf4j.LoggerFactory;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
@@ -209,7 +211,7 @@ class ConnectionHandler implements MessageWriteTarget {
         } catch (Exception e) {
             // This can happen eg if the channel closes while the thread is about to get killed
             // (ClosedByInterruptException), or if handler.parser.receiveBytes throws something
-            log.error("Error handling SelectionKey", e);
+            log.error("Error handling SelectionKey: " + e.getMessage());
             if (handler != null)
                 handler.closeConnection();
         }
