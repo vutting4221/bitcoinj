@@ -331,4 +331,7 @@ public abstract class NetworkParameters implements Serializable {
 
     /** The number of previous blocks to look at when calculating the next Block's difficulty */
     public int getRetargetBlockCount() { return getInterval() - 1; }
+
+    /** Gets the hash of the given block for the purpose of checking its PoW */
+    public Sha256Hash calculateBlockPoWHash(Block b) { return b.getHash(); }
 }

@@ -21,6 +21,7 @@ import com.google.bitcoin.script.ScriptBuilder;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
+import com.lambdaworks.crypto.SCrypt;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,6 +31,7 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.OutputStream;
 import java.math.BigInteger;
+import java.security.GeneralSecurityException;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.LinkedList;
@@ -510,6 +512,23 @@ public class Block extends Message {
     }
 
     /**
+     * Calculates the block scrypt hash by serializing the block and hashing the
+     * resulting bytes.
+     */
+    private Sha256Hash calculateScryptHash() {
+        try {
+            ByteArrayOutputStream bos = new UnsafeByteArrayOutputStream(HEADER_SIZE);
+            writeHeader(bos);
+            byte[] bytes = bos.toByteArray();
+            return new Sha256Hash(Utils.reverseBytes(SCrypt.scrypt(bytes, bytes, 1024, 1, 1, 32)));
+        } catch (IOException e) {
+            throw new RuntimeException(e); // Cannot happen.
+        } catch (GeneralSecurityException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
      * Returns the hash of the block (which for a valid, solved block should be below the target) in the form seen on
      * the block explorer. If you call this on block 1 in the production chain
      * you will get "00000000839a8e6886ab5951d76f411475428afc90947ee320161bbf18eb6048".
@@ -644,11 +663,11 @@ public class Block extends Message {
         // field is of the right value. This requires us to have the preceeding blocks.
         BigInteger target = getDifficultyTargetAsInteger();
 
-        BigInteger h = getHash().toBigInteger();
+        BigInteger h = params.calculateBlockPoWHash(this).toBigInteger();
         if (h.compareTo(target) > 0) {
             // Proof of work check failed!
             if (throwException)
-                throw new VerificationException("Hash is higher than target: " + getHashAsString() + " vs "
+                throw new VerificationException("Hash is higher than target: " + params.calculateBlockPoWHash(this).toString() + " vs "
                         + target.toString(16));
             else
                 return false;
