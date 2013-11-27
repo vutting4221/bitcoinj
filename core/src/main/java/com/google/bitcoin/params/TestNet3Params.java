@@ -27,6 +27,9 @@ import static com.google.common.base.Preconditions.checkState;
  * and testing of applications and new Bitcoin versions.
  */
 public class TestNet3Params extends NetworkParameters {
+    /** The string returned by getId() for the testnet. */
+    public static final String ID_TESTNET = "org.bitcoin.test";
+
     public TestNet3Params() {
         super();
         id = ID_TESTNET;
@@ -61,5 +64,9 @@ public class TestNet3Params extends NetworkParameters {
             instance = new TestNet3Params();
         }
         return instance;
+    }
+
+    static {
+        NetworkParameters.registerParams(get());
     }
 }

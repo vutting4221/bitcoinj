@@ -26,6 +26,9 @@ import java.math.BigInteger;
  * {@link com.google.bitcoin.core.Block#solve()} by setting difficulty to the easiest possible.
  */
 public class UnitTestParams extends NetworkParameters {
+    /** Unit test network. */
+    public static final String ID_UNITTESTNET = "com.google.bitcoin.unittest";
+
     public UnitTestParams() {
         super();
         id = ID_UNITTESTNET;
@@ -52,5 +55,10 @@ public class UnitTestParams extends NetworkParameters {
             instance = new UnitTestParams();
         }
         return instance;
+    }
+
+    static {
+        NetworkParameters.registerParams(TestNet3Params.get()); // Make sure TestNet3 gets priority over UnitTests
+        NetworkParameters.registerParams(get());
     }
 }

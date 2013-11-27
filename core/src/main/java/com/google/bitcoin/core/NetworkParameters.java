@@ -26,8 +26,7 @@ import javax.annotation.Nullable;
 import java.io.ByteArrayOutputStream;
 import java.io.Serializable;
 import java.math.BigInteger;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 import static com.google.bitcoin.core.Utils.COIN;
 
@@ -50,14 +49,12 @@ public abstract class NetworkParameters implements Serializable {
      */
     public static final byte[] SATOSHI_KEY = Hex.decode("04fc9702847840aaf195de8442ebecedf5b095cdbb9bc716bda9110971b28a49e0ead8564ff0db22209e0374782c093bb899692d524e9d6a6956e7c5ecbcd68284");
 
-    /** The string returned by getId() for the main, production network where people trade things. */
-    public static final String ID_MAINNET = "org.bitcoin.production";
-    /** The string returned by getId() for the testnet. */
-    public static final String ID_TESTNET = "org.bitcoin.test";
-    /** Unit test network. */
-    public static final String ID_UNITTESTNET = "com.google.bitcoin.unittest";
-
-    // TODO: Seed nodes should be here as well.
+    private static List<NetworkParameters> paramSet = Collections.synchronizedList(new ArrayList<NetworkParameters>());
+    protected static void registerParams(NetworkParameters params) {
+        if (paramSet.contains(params))
+            return;
+        paramSet.add(params);
+    }
 
     protected Block genesisBlock;
     protected BigInteger proofOfWorkLimit;
@@ -188,15 +185,30 @@ public abstract class NetworkParameters implements Serializable {
     /** Returns the network parameters for the given string ID or NULL if not recognized. */
     @Nullable
     public static NetworkParameters fromID(String id) {
-        if (id.equals(ID_MAINNET)) {
-            return MainNetParams.get();
-        } else if (id.equals(ID_TESTNET)) {
-            return TestNet3Params.get();
-        } else if (id.equals(ID_UNITTESTNET)) {
-            return UnitTestParams.get();
-        } else {
-            return null;
+        for (NetworkParameters params : paramSet)
+            if (params.getId().equals(id))
+                return params;
+        return null;
+    }
+
+    /**
+     * Check if a given address version is valid given the NetworkParameters.
+     */
+    public boolean isAcceptableAddressVersion(int version) {
+        for (int v : getAcceptableAddressCodes()) {
+            if (version == v)
+                return true;
         }
+        return false;
+    }
+
+    /** Gets a NetworkParameters object which accepts an address with the given version byte, or null */
+    public static NetworkParameters getParamsFromAddressByte(int version) {
+        for (NetworkParameters params : paramSet) {
+            if (params.isAcceptableAddressVersion(version))
+                return params;
+        }
+        return null;
     }
 
     public int getSpendableCoinbaseDepth() {

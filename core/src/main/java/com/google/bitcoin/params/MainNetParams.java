@@ -26,6 +26,9 @@ import static com.google.common.base.Preconditions.checkState;
  * Parameters for the main production network on which people trade goods and services.
  */
 public class MainNetParams extends NetworkParameters {
+    /** The string returned by getId() for the main, production network where people trade things. */
+    public static final String ID_MAINNET = "org.bitcoin.production";
+
     public MainNetParams() {
         super();
         interval = INTERVAL;
@@ -70,5 +73,9 @@ public class MainNetParams extends NetworkParameters {
             instance = new MainNetParams();
         }
         return instance;
+    }
+
+    static {
+        NetworkParameters.registerParams(get());
     }
 }

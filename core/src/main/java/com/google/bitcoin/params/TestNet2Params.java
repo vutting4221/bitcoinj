@@ -26,9 +26,12 @@ import static com.google.common.base.Preconditions.checkState;
  * based on it.
  */
 public class TestNet2Params extends NetworkParameters {
+    /** The string returned by getId() for the testnet. */
+    public static final String ID_TESTNET2 = "org.bitcoin.test2";
+
     public TestNet2Params() {
         super();
-        id = ID_TESTNET;
+        id = ID_TESTNET2;
         packetMagic = 0xfabfb5daL;
         port = 18333;
         addressHeader = 111;
@@ -54,5 +57,10 @@ public class TestNet2Params extends NetworkParameters {
             instance = new TestNet2Params();
         }
         return instance;
+    }
+
+    static {
+        NetworkParameters.registerParams(TestNet3Params.get()); // Make sure TestNet3 gets priority over TestNet2
+        NetworkParameters.registerParams(get());
     }
 }

@@ -51,7 +51,7 @@ public class Address extends VersionedChecksummedBytes {
         super(version, hash160);
         checkNotNull(params);
         checkArgument(hash160.length == 20, "Addresses are 160-bit hashes, so you must provide 20 bytes");
-        if (!isAcceptableVersion(params, version))
+        if (!params.isAcceptableAddressVersion(version))
             throw new WrongNetworkException(version, params.getAcceptableAddressCodes());
     }
 
@@ -93,7 +93,7 @@ public class Address extends VersionedChecksummedBytes {
     public Address(@Nullable NetworkParameters params, String address) throws AddressFormatException {
         super(address);
         if (params != null) {
-            if (!isAcceptableVersion(params, version)) {
+            if (!params.isAcceptableAddressVersion(version)) {
                 throw new WrongNetworkException(version, params.getAcceptableAddressCodes());
             }
         }
@@ -123,14 +123,7 @@ public class Address extends VersionedChecksummedBytes {
      */
     @Nullable
     public NetworkParameters getParameters() {
-        // TODO: There should be a more generic way to get all supported networks.
-        NetworkParameters[] networks = { TestNet3Params.get(), MainNetParams.get() };
-        for (NetworkParameters params : networks) {
-            if (isAcceptableVersion(params, version)) {
-                return params;
-            }
-        }
-        return null;
+        return NetworkParameters.getParamsFromAddressByte(version);
     }
 
     /**
@@ -146,17 +139,5 @@ public class Address extends VersionedChecksummedBytes {
         } catch (WrongNetworkException e) {
             throw new RuntimeException(e);  // Cannot happen.
         }
-    }
-
-    /**
-     * Check if a given address version is valid given the NetworkParameters.
-     */
-    private static boolean isAcceptableVersion(NetworkParameters params, int version) {
-        for (int v : params.getAcceptableAddressCodes()) {
-            if (version == v) {
-                return true;
-            }
-        }
-        return false;
     }
 }
