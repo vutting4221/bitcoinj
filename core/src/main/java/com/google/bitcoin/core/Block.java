@@ -838,6 +838,15 @@ public class Block extends Message {
         hash = null;
     }
 
+    public void removeTransaction(int index) {
+        unCacheTransactions();
+        Transaction t = transactions.remove(index);
+        t.setParent(null);
+        adjustLength(0, (VarInt.sizeOf(transactions.size()) - VarInt.sizeOf(transactions.size() + 1)) - t.length);
+        merkleRoot = null;
+        hash = null;
+    }
+
     /** Adds a transaction to this block. The nonce and merkle root are invalid after this. */
     public void addTransaction(Transaction t) {
         addTransaction(t, true);
