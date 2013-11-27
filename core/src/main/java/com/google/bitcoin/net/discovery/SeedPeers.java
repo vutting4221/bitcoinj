@@ -28,7 +28,7 @@ import java.util.concurrent.TimeUnit;
  * active on the network for a long period of time. The intention is to be a last resort way of finding a connection
  * to the network, in case IRC and DNS fail. The list comes from the Bitcoin C++ source code.
  */
-public class SeedPeers implements PeerDiscovery {
+class SeedPeers implements PeerDiscovery {
     private NetworkParameters params;
     private int pnseedIndex;
 
