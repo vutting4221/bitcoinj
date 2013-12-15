@@ -821,13 +821,15 @@ public abstract class AbstractBlockChain {
         // two weeks after the initial block chain download.
         long now = System.currentTimeMillis();
         StoredBlock cursor = blockStore.get(prev.getHash());
-        for (int i = 0; i < params.getInterval() - 1; i++) {
+        for (int i = 0; i < params.getRetargetBlockCount(); i++) {
             if (cursor == null) {
                 // This should never happen. If it does, it means we are following an incorrect or busted chain.
                 throw new VerificationException(
                         "Difficulty transition point but we did not find a way back to the genesis block.");
             }
-            cursor = blockStore.get(cursor.getHeader().getPrevBlockHash());
+            StoredBlock nextCursor = blockStore.get(cursor.getHeader().getPrevBlockHash());
+            if (nextCursor != null)
+                cursor = nextCursor;
         }
         long elapsed = System.currentTimeMillis() - now;
         if (elapsed > 50)

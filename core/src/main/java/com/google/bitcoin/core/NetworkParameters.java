@@ -328,4 +328,7 @@ public abstract class NetworkParameters implements Serializable {
     public byte[] getAlertSigningKey() {
         return alertSigningKey;
     }
+
+    /** The number of previous blocks to look at when calculating the next Block's difficulty */
+    public int getRetargetBlockCount() { return getInterval() - 1; }
 }
