@@ -42,7 +42,7 @@ public abstract class NetworkParameters implements Serializable {
     /**
      * The protocol version this library implements.
      */
-    public static final int PROTOCOL_VERSION = 70001;
+    public static int PROTOCOL_VERSION = 70001;
 
     /**
      * The alert signing key originally owned by Satoshi, and now passed on to Gavin along with a few others.

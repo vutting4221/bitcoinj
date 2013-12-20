@@ -109,5 +109,6 @@ public class LitecoinParams extends NetworkParameters {
 
     static {
         NetworkParameters.registerParams(get());
+        NetworkParameters.PROTOCOL_VERSION = 70002;
     }
 }
