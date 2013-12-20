@@ -1168,7 +1168,7 @@ public class Transaction extends ChildMessage implements Serializable {
                 throw new VerificationException("Transaction output negative");
             valueOut = valueOut.add(output.getValue());
         }
-        if (valueOut.compareTo(params.MAX_MONEY) > 0)
+        if (valueOut.compareTo(params.getMaxMoney()) > 0)
             throw new VerificationException("Total transaction output value greater than possible");
 
         if (isCoinBase()) {

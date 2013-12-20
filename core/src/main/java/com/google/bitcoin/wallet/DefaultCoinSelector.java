@@ -23,7 +23,7 @@ public class DefaultCoinSelector implements CoinSelector {
         ArrayList<TransactionOutput> sortedOutputs = new ArrayList<TransactionOutput>(candidates);
         // When calculating the wallet balance, we may be asked to select all possible coins, if so, avoid sorting
         // them in order to improve performance.
-        if (!biTarget.equals(NetworkParameters.MAX_MONEY)) {
+        if (!biTarget.equals(BigInteger.valueOf(Long.MAX_VALUE))) {
             sortOutputs(sortedOutputs);
         }
         // Now iterate over the sorted outputs until we have got as close to the target as possible or a little

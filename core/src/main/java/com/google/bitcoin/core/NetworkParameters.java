@@ -125,7 +125,8 @@ public abstract class NetworkParameters implements Serializable {
     /**
      * The maximum money to be generated
      */
-    public static final BigInteger MAX_MONEY = new BigInteger("21000000", 10).multiply(COIN);
+    private BigInteger MAX_MONEY = new BigInteger("21000000", 10).multiply(COIN);
+    public BigInteger getMaxMoney() { return MAX_MONEY; }
 
     /** Alias for TestNet3Params.get(), use that instead. */
     @Deprecated

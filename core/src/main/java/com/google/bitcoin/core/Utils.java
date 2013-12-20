@@ -84,7 +84,7 @@ public class Utils {
         checkArgument(cents < 100);
         checkArgument(cents >= 0);
         checkArgument(coins >= 0);
-        checkArgument(coins < NetworkParameters.MAX_MONEY.divide(Utils.COIN).longValue());
+        //checkArgument(coins < NetworkParameters.MAX_MONEY.divide(Utils.COIN).longValue());
         BigInteger bi = BigInteger.valueOf(coins).multiply(COIN);
         bi = bi.add(BigInteger.valueOf(cents).multiply(CENT));
         return bi;
@@ -122,8 +122,8 @@ public class Utils {
         BigInteger bigint = new BigDecimal(coins).movePointRight(8).toBigIntegerExact();
         if (bigint.compareTo(BigInteger.ZERO) < 0)
             throw new ArithmeticException("Negative coins specified");
-        if (bigint.compareTo(NetworkParameters.MAX_MONEY) > 0)
-            throw new ArithmeticException("Amount larger than the total quantity of Bitcoins possible specified.");
+        /*if (bigint.compareTo(NetworkParameters.MAX_MONEY) > 0)
+            throw new ArithmeticException("Amount larger than the total quantity of Bitcoins possible specified.");*/
         return bigint;
     }
 
