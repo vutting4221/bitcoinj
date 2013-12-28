@@ -35,10 +35,10 @@ public class LitecoinWallet extends Wallet {
     // Override Send stuff to set the right fee params
     private void setRequestFeeForOutputs(SendRequest req) {
         req.ensureMinRequiredFee = false;
-        req.fee = Utils.CENT.multiply(BigInteger.valueOf(2));
+        req.fee = Utils.CENT.divide(BigInteger.TEN);
         for (TransactionOutput output : req.tx.getOutputs())
-            if (output.getValue().compareTo(Utils.CENT) < 0)
-                req.fee = req.fee.add(Utils.CENT.multiply(BigInteger.valueOf(2)));
+            if (output.getValue().compareTo(Utils.CENT.divide(BigInteger.TEN)) < 0)
+                req.fee = req.fee.add(Utils.CENT.divide(BigInteger.TEN));
     }
 
     public Transaction createSend(Address address, BigInteger nanocoins) throws InsufficientMoneyException {
