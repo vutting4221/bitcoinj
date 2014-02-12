@@ -37,7 +37,7 @@ public class DefaultRiskAnalysis implements RiskAnalysis {
     protected Transaction nonFinal;
     protected boolean analyzed;
 
-    private DefaultRiskAnalysis(Wallet wallet, Transaction tx, List<Transaction> dependencies) {
+    protected DefaultRiskAnalysis(Wallet wallet, Transaction tx, List<Transaction> dependencies) {
         this.tx = tx;
         this.dependencies = dependencies;
         this.wallet = wallet;
