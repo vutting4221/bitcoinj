@@ -797,9 +797,12 @@ public class PeerGroup extends AbstractExecutionThreadService implements Transac
                 // as much as possible as that results in a loss of privacy.
                 // The constant 100 here is somewhat arbitrary, but makes sense for small to medium wallets -
                 // it will likely mean we never need to create a filter with different parameters.
+                log.error("last filter element count: " + lastBloomFilterElementCount);
                 lastBloomFilterElementCount = elements > lastBloomFilterElementCount ? elements + 100 : lastBloomFilterElementCount;
+                log.error("new stepping filter element count: " + lastBloomFilterElementCount);
                 BloomFilter.BloomUpdate bloomFlags =
                         requiresUpdateAll ? BloomFilter.BloomUpdate.UPDATE_ALL : BloomFilter.BloomUpdate.UPDATE_P2PUBKEY_ONLY;
+                log.error("flags: " + bloomFlags);
                 BloomFilter filter = new BloomFilter(lastBloomFilterElementCount, bloomFilterFPRate, bloomFilterTweak, bloomFlags);
                 for (PeerFilterProvider p : peerFilterProviders)
                     filter.merge(p.getBloomFilter(lastBloomFilterElementCount, bloomFilterFPRate, bloomFilterTweak));
@@ -813,6 +816,7 @@ public class PeerGroup extends AbstractExecutionThreadService implements Transac
                     case DONT_SEND: send = false; break;
                     case FORCE_SEND: send = true; break;
                 }
+                log.error("changed: " + changed);
 
                 if (send) {
                     for (Peer peer : peers)
@@ -822,7 +826,8 @@ public class PeerGroup extends AbstractExecutionThreadService implements Transac
                     if (chain != null)
                         chain.resetFalsePositiveEstimate();
                 }
-            }
+            } else
+                log.error("No elements in bloom filter");
             // Now adjust the earliest key time backwards by a week to handle the case of clock drift. This can occur
             // both in block header timestamps and if the users clock was out of sync when the key was first created
             // (to within a small amount of tolerance).
