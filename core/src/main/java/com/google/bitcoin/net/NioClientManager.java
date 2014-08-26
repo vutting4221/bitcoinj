@@ -22,6 +22,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.SocketAddress;
+import java.net.SocketException;
 import java.nio.channels.*;
 import java.nio.channels.spi.SelectorProvider;
 import java.util.*;
@@ -140,6 +141,9 @@ public class NioClientManager extends AbstractExecutionThreadService implements 
         try {
             SocketChannel sc = SocketChannel.open();
             sc.configureBlocking(false);
+            try { sc.socket().setTrafficClass(0x10); } catch (SocketException e) { /* Not allowed :( */ }
+            sc.socket().setTcpNoDelay(true);
+            sc.socket().setPerformancePreferences(0, 1, 0); // This does nothing, but...meh
             sc.connect(serverAddress);
             newConnectionChannels.offer(new SocketChannelAndParser(sc, parser));
             selector.wakeup();

@@ -18,6 +18,7 @@ package com.google.bitcoin.net;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.net.SocketException;
 import java.nio.channels.*;
 import java.nio.channels.spi.SelectorProvider;
 import java.util.Iterator;
@@ -44,6 +45,9 @@ public class NioServer extends AbstractExecutionThreadService {
         if (key.isValid() && key.isAcceptable()) {
             // Accept a new connection, give it a parser as an attachment
             SocketChannel newChannel = sc.accept();
+            try { newChannel.socket().setTrafficClass(0x10); } catch (SocketException e) { /* Not allowed :( */ }
+            newChannel.socket().setTcpNoDelay(true);
+            newChannel.socket().setPerformancePreferences(0, 1, 0); // This does nothing, but...meh
             newChannel.configureBlocking(false);
             SelectionKey newKey = newChannel.register(selector, SelectionKey.OP_READ);
             try {
@@ -74,6 +78,7 @@ public class NioServer extends AbstractExecutionThreadService {
         sc.socket().bind(bindAddress);
         selector = SelectorProvider.provider().openSelector();
         sc.register(selector, SelectionKey.OP_ACCEPT);
+        sc.socket().setPerformancePreferences(0, 1, 0); // This does nothing, but...meh
     }
 
     @Override
