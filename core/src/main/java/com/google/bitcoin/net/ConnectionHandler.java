@@ -189,10 +189,29 @@ class ConnectionHandler implements MessageWriteTarget {
         }
     }
 
+    public static void handleKeyWrite(SelectionKey key) {
+        ConnectionHandler handler = ((ConnectionHandler) key.attachment());
+        try {
+            if (handler == null)
+                return;
+            if (!key.isValid()) {
+                handler.closeConnection(); // Key has been cancelled, make sure the socket gets closed
+                return;
+            }
+            if (key.isWritable())
+                handler.tryWriteBytes();
+        } catch (Exception e) {
+            // This can happen eg if the channel closes while the thread is about to get killed
+            // (ClosedByInterruptException)
+            log.error("Error handling SelectionKey write: {}", Throwables.getRootCause(e).getMessage());
+            handler.closeConnection();
+        }
+    }
+
     // Handle a SelectionKey which was selected
     // Runs unlocked as the caller is single-threaded (or if not, should enforce that handleKey is only called
     // atomically for a given ConnectionHandler)
-    public static void handleKey(SelectionKey key) {
+    public static void handleKeyRead(SelectionKey key) {
         ConnectionHandler handler = ((ConnectionHandler)key.attachment());
         try {
             if (handler == null)
@@ -220,12 +239,10 @@ class ConnectionHandler implements MessageWriteTarget {
                 // position)
                 handler.readBuff.compact();
             }
-            if (key.isWritable())
-                handler.tryWriteBytes();
         } catch (Exception e) {
             // This can happen eg if the channel closes while the thread is about to get killed
             // (ClosedByInterruptException), or if handler.parser.receiveBytes throws something
-            log.error("Error handling SelectionKey: {}", Throwables.getRootCause(e).getMessage());
+            log.error("Error handling SelectionKey read: {}", Throwables.getRootCause(e).getMessage());
             handler.closeConnection();
         }
     }

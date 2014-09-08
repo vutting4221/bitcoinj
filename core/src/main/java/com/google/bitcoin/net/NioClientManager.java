@@ -26,6 +26,8 @@ import java.net.SocketException;
 import java.nio.channels.*;
 import java.nio.channels.spi.SelectorProvider;
 import java.util.*;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
 
 /**
@@ -44,11 +46,13 @@ public class NioClientManager extends AbstractExecutionThreadService implements 
     }
     final Queue<SocketChannelAndParser> newConnectionChannels = new LinkedBlockingQueue<SocketChannelAndParser>();
 
+    private final Executor readExecutor = Executors.newFixedThreadPool(1);
+
     // Added to/removed from by the individual ConnectionHandler's, thus must by synchronized on its own.
     private final Set<ConnectionHandler> connectedHandlers = Collections.synchronizedSet(new HashSet<ConnectionHandler>());
 
     // Handle a SelectionKey which was selected
-    private void handleKey(SelectionKey key) throws IOException {
+    private void handleKey(final SelectionKey key) throws IOException {
         // We could have a !isValid() key here if the connection is already closed at this point
         if (key.isValid() && key.isConnectable()) { // ie a client connection which has finished the initial connect process
             // Create a ConnectionHandler and hook everything together
@@ -71,8 +75,15 @@ public class NioClientManager extends AbstractExecutionThreadService implements 
                 log.error("Failed to connect with exception: {}", Throwables.getRootCause(e).getMessage());
                 handler.closeConnection();
             }
-        } else // Process bytes read
-            ConnectionHandler.handleKey(key);
+        } else {// Process bytes read
+            ConnectionHandler.handleKeyWrite(key);
+            readExecutor.execute(new Runnable() {
+                @Override
+                public void run() {
+                    ConnectionHandler.handleKeyRead(key);
+                }
+            });
+        }
     }
 
     /**
@@ -123,7 +134,7 @@ public class NioClientManager extends AbstractExecutionThreadService implements 
                 }
                 key.cancel();
                 if (key.attachment() instanceof ConnectionHandler)
-                    ConnectionHandler.handleKey(key); // Close connection if relevant
+                    ConnectionHandler.handleKeyRead(key); // Close connection if relevant
             }
             try {
                 selector.close();

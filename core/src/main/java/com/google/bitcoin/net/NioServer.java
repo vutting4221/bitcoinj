@@ -22,6 +22,8 @@ import java.net.SocketException;
 import java.nio.channels.*;
 import java.nio.channels.spi.SelectorProvider;
 import java.util.Iterator;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Throwables;
@@ -40,8 +42,10 @@ public class NioServer extends AbstractExecutionThreadService {
     private final ServerSocketChannel sc;
     @VisibleForTesting final Selector selector;
 
+    private final Executor readExecutor = Executors.newFixedThreadPool(1);
+
     // Handle a SelectionKey which was selected
-    private void handleKey(Selector selector, SelectionKey key) throws IOException {
+    private void handleKey(Selector selector, final SelectionKey key) throws IOException {
         if (key.isValid() && key.isAcceptable()) {
             // Accept a new connection, give it a parser as an attachment
             SocketChannel newChannel = sc.accept();
@@ -60,7 +64,13 @@ public class NioServer extends AbstractExecutionThreadService {
                 newKey.channel().close();
             }
         } else { // Got a closing channel or a channel to a client connection
-            ConnectionHandler.handleKey(key);
+            ConnectionHandler.handleKeyWrite(key);
+            readExecutor.execute(new Runnable() {
+                @Override
+                public void run() {
+                    ConnectionHandler.handleKeyRead(key);
+                }
+            });
         }
     }
 
