@@ -968,7 +968,6 @@ public abstract class DatabaseFullPrunedBlockStore implements FullPrunedBlockSto
         }
         catch (ScriptException e) {
             // Unparseable, but this isn't an error - it's an output not containing an address
-            log.info("Could not parse script for output: " + out.getHash().toString());
         }
         if (outputScript != null && (outputScript.isSentToAddress()
                 || outputScript.isSentToRawPubKey()
