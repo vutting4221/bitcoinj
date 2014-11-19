@@ -1585,7 +1585,7 @@ public class FullBlockTestGenerator {
                 addOnlyInputToTransaction(tx, nextBlock);
                 nextBlock.addTransaction(tx);
                 nextBlock.solve();
-                blocks.add(new BlockAndValidity(nextBlock, true, false, nextBlock.getHash(), nextHeight++, "large reorg initial blocks " + i));
+                blocks.add(new BlockAndValidity(nextBlock, true, false, nextBlock.getHash(), nextHeight++, "large reorg initial blocks " + i).setSendOnce(true));
                 spendableOutputs.offer(nextBlock.getCoinbaseOutput());
                 largeReorgOutput = spendableOutputs.poll();
             }
