@@ -60,8 +60,9 @@ public class BitcoindComparisonTool {
 
     public static void main(String[] args) throws Exception {
         BriefLogFormatter.init();
-        System.out.println("USAGE: bitcoinjBlockStoreLocation runExpensiveTests(1/0) [port=18444]");
+        System.out.println("USAGE: bitcoinjBlockStoreLocation runExpensiveTests(1/0) [runBarelyExpensiveTests(1/0)] [port=18444]");
         boolean runExpensiveTests = args.length > 1 && Integer.parseInt(args[1]) == 1;
+        boolean runBarelyExpensiveTests = args.length < 3 || Integer.parseInt(args[2]) == 1;
 
         params = RegTestParams.get();
 
@@ -69,7 +70,7 @@ public class BitcoindComparisonTool {
         blockFile.deleteOnExit();
 
         FullBlockTestGenerator generator = new FullBlockTestGenerator(params);
-        final RuleList blockList = generator.getBlocksToTest(true, runExpensiveTests, blockFile);
+        final RuleList blockList = generator.getBlocksToTest(runBarelyExpensiveTests, runExpensiveTests, blockFile);
         final Map<Sha256Hash, Block> preloadedBlocks = new HashMap<Sha256Hash, Block>();
         final Iterator<Block> blocks = new BlockFileLoader(params, Arrays.asList(blockFile));
 
@@ -210,7 +211,7 @@ public class BitcoindComparisonTool {
         bitcoindChainHead = params.getGenesisBlock().getHash();
         
         // bitcoind MUST be on localhost or we will get banned as a DoSer
-        new NioClient(new InetSocketAddress(InetAddress.getByName("127.0.0.1"), args.length > 2 ? Integer.parseInt(args[2]) : params.getPort()), bitcoind, 1000);
+        new NioClient(new InetSocketAddress(InetAddress.getByName("127.0.0.1"), args.length > 3 ? Integer.parseInt(args[3]) : params.getPort()), bitcoind, 1000);
 
         connectedFuture.get();
 
