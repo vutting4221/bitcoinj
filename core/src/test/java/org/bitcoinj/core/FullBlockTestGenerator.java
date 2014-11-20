@@ -1580,7 +1580,7 @@ public class FullBlockTestGenerator {
                 nextBlock = createNextBlock(nextBlock, nextHeight, largeReorgOutput, null);
                 Transaction tx = new Transaction(params);
                 byte[] outputScript = new byte[Block.MAX_BLOCK_SIZE - nextBlock.block.getMessageSize() - 65];
-                Arrays.fill(outputScript, (byte) OP_FALSE);
+                Arrays.fill(outputScript, (byte) OP_RETURN);
                 tx.addOutput(new TransactionOutput(params, tx, ZERO, outputScript));
                 addOnlyInputToTransaction(tx, nextBlock);
                 nextBlock.addTransaction(tx);
